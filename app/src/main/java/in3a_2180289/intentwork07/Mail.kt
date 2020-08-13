@@ -110,5 +110,7 @@ class Mail(host: String, user: String, port: Int, pass: String) {
             folder.close()
             imap4.close()
         }
+
+        MainActivity.mSwipeRefreshLayout.isRefreshing = false
     })
 }
