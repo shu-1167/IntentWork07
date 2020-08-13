@@ -1,3 +1,10 @@
+/**
+ * スマートフォン・アプリ演習Ⅰ
+ * 第6章オリジナル作品制作（その２）
+ *
+ * 作成日：2020/08/05
+ * @author shu-1167
+ */
 package in3a_2180289.intentwork07
 
 import android.os.Bundle
@@ -10,9 +17,10 @@ class MainActivity : AppCompatActivity() {
         lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
     }
 
+    // hostname
     private val host = "example.com"
 
-    // mail address
+    // username
     private val user = "hogehoge"
 
     // IMAPS port
