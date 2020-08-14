@@ -8,13 +8,22 @@
 package in3a_2180289.intentwork07
 
 import android.os.Bundle
+import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity() {
     companion object {
         lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
+        lateinit var mRecyclerView: RecyclerView
+
+        // 別スレッド等から処理する用
+        val handler = Handler()
     }
 
     // hostname
@@ -33,13 +42,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // view取得
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
+        mRecyclerView = findViewById(R.id.recyclerview)
+        mRecyclerView.setHasFixedSize(true)
+        // 更新イベントリスナー追加
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
     }
 
     private val mOnRefreshListener = SwipeRefreshLayout.OnRefreshListener {
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
+        // メールクラス生成
         val mail = Mail(host, user, port, pass)
-        val thread = mail.thread
-        thread.start()
+        coroutineScope.launch {
+            // 受信処理
+            mail.receive()
+        }
     }
 }
