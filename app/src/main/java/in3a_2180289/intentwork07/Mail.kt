@@ -30,7 +30,7 @@ class Mail(
         // 配列を引数にAdapterを生成
         val adapter = Adapter(arrayOf())
         val recyclerView = mRecyclerView
-        val layoutManager = LinearLayoutManager(mRecyclerView.context)
+        val layoutManager = LinearLayoutManager(recyclerView.context)
         // Handlerを使用してメイン(UI)スレッドに処理を依頼する
         handler.post {
             kotlin.run {
@@ -90,7 +90,7 @@ class Mail(
                 MimeUtility.decodeText(msgs[i].subject)
             } else {
                 // 件名がない場合、"(件名なし)"を代入
-                mRecyclerView.context.getString(R.string.null_subject)
+                recyclerView.context.getString(R.string.null_subject)
             }
             // println("Subject = $subjectText")
             Log.d(this.javaClass.simpleName, "Subject = $subjectText")
