@@ -42,6 +42,7 @@ class Mail(
 
         // http://connector.sourceforge.net/doc-files/Properties.html
         val props = Properties()
+        props.setProperty("mail.imaps.connectiontimeout", "15")
         props.setProperty("mail.debug", "true")
         // セッション
         val session: Session = Session.getInstance(props, null)
@@ -84,7 +85,12 @@ class Mail(
             Log.d(this.javaClass.simpleName, "Address = $addressText")
 
             // Subject
-            val subjectText: String = MimeUtility.decodeText(msgs[i].subject)
+            val subjectText = if (msgs[i].subject != null) {
+                MimeUtility.decodeText(msgs[i].subject)
+            } else {
+                // 件名がない場合、"(件名なし)"を代入
+                "(件名なし)"
+            }
             // println("Subject = $subjectText")
             Log.d(this.javaClass.simpleName, "Subject = $subjectText")
 
