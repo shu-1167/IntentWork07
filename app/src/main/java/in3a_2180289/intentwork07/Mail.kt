@@ -11,6 +11,7 @@ package in3a_2180289.intentwork07
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import in3a_2180289.intentwork07.MainActivity.Companion.handler
+import in3a_2180289.intentwork07.MainActivity.Companion.mRecyclerView
 import in3a_2180289.intentwork07.MainActivity.Companion.mSwipeRefreshLayout
 import java.text.DateFormat
 import java.util.*
@@ -28,8 +29,8 @@ class Mail(
     fun receive() {
         // 配列を引数にAdapterを生成
         val adapter = Adapter(arrayOf())
-        val recyclerView = MainActivity.mRecyclerView
-        val layoutManager = LinearLayoutManager(MainActivity.mRecyclerView.context)
+        val recyclerView = mRecyclerView
+        val layoutManager = LinearLayoutManager(mRecyclerView.context)
         // Handlerを使用してメイン(UI)スレッドに処理を依頼する
         handler.post {
             kotlin.run {
@@ -89,7 +90,7 @@ class Mail(
                 MimeUtility.decodeText(msgs[i].subject)
             } else {
                 // 件名がない場合、"(件名なし)"を代入
-                "(件名なし)"
+                mRecyclerView.context.getString(R.string.null_subject)
             }
             // println("Subject = $subjectText")
             Log.d(this.javaClass.simpleName, "Subject = $subjectText")
