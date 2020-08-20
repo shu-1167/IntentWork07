@@ -27,6 +27,8 @@ class Mail(
     fun receive(accountId: Int) {
         // 配列を引数にAdapterを生成
         val adapter = Adapter(arrayOf())
+        // OnItemClickListenerをセット
+        adapter.setOnItemClickListener(MainActivity.mOnItemClickListener)
         val recyclerView = MainActivity.mRecyclerView
         // Handlerを使用してメイン(UI)スレッドに処理を依頼する
         handler.post {
@@ -147,7 +149,7 @@ class Mail(
 //                    }
             Log.d(this.javaClass.simpleName, "Body = $bodyText")
 
-            val item = arrayOf(addressText, subjectText)
+            val item = arrayOf(addressText, subjectText, messageId.toString())
             adapter.addItem(item)
             // view更新処理はMainActivityに委託
             handler.post {

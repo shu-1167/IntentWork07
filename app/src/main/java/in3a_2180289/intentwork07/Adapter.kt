@@ -37,7 +37,7 @@ class Adapter(private var list: Array<Array<String>>): RecyclerView.Adapter<Adap
         holder.itemView.textView2.text = list[position][1]
         // クリックイベント
         holder.itemView.setOnClickListener {
-            listener.onItemClickListener(it, position)
+            listener.onItemClickListener(it, position, list[position][2].toLong())
         }
     }
 
@@ -47,7 +47,7 @@ class Adapter(private var list: Array<Array<String>>): RecyclerView.Adapter<Adap
 
     //インターフェースの作成
     interface OnItemClickListener {
-        fun onItemClickListener(view: View, position: Int)
+        fun onItemClickListener(view: View, position: Int, uid: Long)
     }
 
     // リスナー

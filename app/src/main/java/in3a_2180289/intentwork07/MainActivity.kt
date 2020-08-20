@@ -12,6 +12,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,6 +33,8 @@ class MainActivity : AppCompatActivity() {
 
         // 別スレッド等から処理する用
         val handler = Handler()
+
+        lateinit var mOnItemClickListener: Adapter.OnItemClickListener
     }
 
     private val requestCode = 1
@@ -56,6 +59,42 @@ class MainActivity : AppCompatActivity() {
         mRecyclerView.setHasFixedSize(true)
         // 更新イベントリスナー追加
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
+        // RecyclerViewのItemClickListener設定
+        mOnItemClickListener = object : Adapter.OnItemClickListener {
+            override fun onItemClickListener(view: View, position: Int, uid: Long) {
+                // 現在のアカウントを取得
+                val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
+                val accountId = sharedPref.getInt("openedAccount", -1)
+                if (accountId == -1) {
+                    // アカウントが指定されていない
+                    Toast.makeText(
+                        mRecyclerView.context,
+                        getString(R.string.plz_add_account),
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    // メール本文を取得し、渡す
+                    val intent = Intent(mRecyclerView.context, MailViewActivity::class.java)
+                    val dbHelper = MailDBHelper(mRecyclerView.context, dbName, null, dbVersion)
+                    val database = dbHelper.readableDatabase
+                    val cursor = database.query(
+                        "mails",
+                        arrayOf("body"),
+                        "user_id = ? and uid = ?",
+                        arrayOf(accountId.toString(), uid.toString()),
+                        null,
+                        null,
+                        null
+                    )
+                    cursor.moveToFirst()
+                    if (cursor.count == 1) {
+                        intent.putExtra("body", cursor.getString(0))
+                    }
+                    cursor.close()
+                    startActivity(intent)
+                }
+            }
+        }
 
         // アカウント追加アクティビティ
         val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
