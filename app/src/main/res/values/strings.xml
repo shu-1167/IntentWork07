@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">IntentWork07</string>
-    <string name="account_add_button">追加</string>
+    <string name="account_add_dialog">アカウントを追加</string>
+    <string name="account_add_ok">追加</string>
+    <string name="account_add_cancel">後で</string>
     <string name="account_input_address">メールアドレス</string>
     <string name="account_input_password">パスワード</string>
     <string name="null_subject">件名なし</string>

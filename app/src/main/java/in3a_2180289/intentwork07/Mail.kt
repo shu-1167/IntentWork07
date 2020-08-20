@@ -209,7 +209,6 @@ class Mail(
 
             // データベースへの追加処理
             if (!mailList.contains(messageId)) {
-                Log.e("mailList.contains", messageId.toString())
                 // 新規メール
                 val values = ContentValues()
                 values.put("user_id", accountId)
