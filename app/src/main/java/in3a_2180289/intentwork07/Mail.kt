@@ -9,7 +9,11 @@
 package in3a_2180289.intentwork07
 
 import android.content.ContentValues
+import android.content.Intent
 import android.util.Log
+import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import in3a_2180289.intentwork07.MainActivity.Companion.handler
 import java.text.DateFormat
 import java.util.*
@@ -23,12 +27,57 @@ class Mail(
     private val port: Int,
     private val pass: String
 ) {
+    companion object {
+        // RecyclerViewのItemClickListener設定
+        val mOnItemClickListener = object : Adapter.OnItemClickListener {
+            override fun onItemClickListener(view: View, position: Int, uid: Long) {
+                val context = MainActivity.mRecyclerView.context
+                // 現在のアカウントを取得
+                val sharedPref =
+                    context.getSharedPreferences("mail", AppCompatActivity.MODE_PRIVATE)
+                val accountId = sharedPref.getInt("openedAccount", -1)
+                if (accountId == -1) {
+                    // アカウントが指定されていない
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.plz_add_account),
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    // メール本文を取得し、渡す
+                    val intent =
+                        Intent(context, MailViewActivity::class.java)
+                    val dbHelper = MailDBHelper(
+                        context,
+                        MainActivity.dbName, null,
+                        MainActivity.dbVersion
+                    )
+                    val database = dbHelper.readableDatabase
+                    val cursor = database.query(
+                        "mails",
+                        arrayOf("body"),
+                        "user_id = ? and uid = ?",
+                        arrayOf(accountId.toString(), uid.toString()),
+                        null,
+                        null,
+                        null
+                    )
+                    cursor.moveToFirst()
+                    if (cursor.count == 1) {
+                        intent.putExtra("body", cursor.getString(0))
+                    }
+                    cursor.close()
+                    context.startActivity(intent)
+                }
+            }
+        }
+    }
 
     fun receive(accountId: Int) {
         // 配列を引数にAdapterを生成
         val adapter = Adapter(arrayOf())
         // OnItemClickListenerをセット
-        adapter.setOnItemClickListener(MainActivity.mOnItemClickListener)
+        adapter.setOnItemClickListener(mOnItemClickListener)
         val recyclerView = MainActivity.mRecyclerView
         // Handlerを使用してメイン(UI)スレッドに処理を依頼する
         handler.post {
@@ -54,7 +103,7 @@ class Mail(
         cursor.moveToFirst()
         val mailList = mutableListOf<Long>()
         if (cursor.count > 0) {
-            while (cursor.isAfterLast) {
+            while (!cursor.isAfterLast) {
                 mailList.add(cursor.getLong(0))
                 cursor.moveToNext()
             }
@@ -65,7 +114,7 @@ class Mail(
         // http://connector.sourceforge.net/doc-files/Properties.html
         val props = Properties()
         props.setProperty("mail.imaps.connectiontimeout", "10000")
-        props.setProperty("mail.debug", "true")
+        // props.setProperty("mail.debug", "true")
         // セッション
         val session: Session = Session.getInstance(props, null)
         // IMAP で SSL を使用する
@@ -160,6 +209,7 @@ class Mail(
 
             // データベースへの追加処理
             if (!mailList.contains(messageId)) {
+                Log.e("mailList.contains", messageId.toString())
                 // 新規メール
                 val values = ContentValues()
                 values.put("user_id", accountId)

@@ -6,4 +6,5 @@
     <string name="null_subject">件名なし</string>
     <string name="failed_add_account">アカウント追加に失敗しました</string>
     <string name="plz_add_account">アカウントを追加してください</string>
+    <string name="account_not_found">アカウントが見つかりませんでした</string>
 </resources>

@@ -12,7 +12,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -33,15 +32,10 @@ class MainActivity : AppCompatActivity() {
 
         // 別スレッド等から処理する用
         val handler = Handler()
-
-        lateinit var mOnItemClickListener: Adapter.OnItemClickListener
     }
 
     private val requestCode = 1
-    private var host = String()
-    private var user = String()
     private var port = 993
-    private var pass = String()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,42 +53,6 @@ class MainActivity : AppCompatActivity() {
         mRecyclerView.setHasFixedSize(true)
         // 更新イベントリスナー追加
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
-        // RecyclerViewのItemClickListener設定
-        mOnItemClickListener = object : Adapter.OnItemClickListener {
-            override fun onItemClickListener(view: View, position: Int, uid: Long) {
-                // 現在のアカウントを取得
-                val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
-                val accountId = sharedPref.getInt("openedAccount", -1)
-                if (accountId == -1) {
-                    // アカウントが指定されていない
-                    Toast.makeText(
-                        mRecyclerView.context,
-                        getString(R.string.plz_add_account),
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    // メール本文を取得し、渡す
-                    val intent = Intent(mRecyclerView.context, MailViewActivity::class.java)
-                    val dbHelper = MailDBHelper(mRecyclerView.context, dbName, null, dbVersion)
-                    val database = dbHelper.readableDatabase
-                    val cursor = database.query(
-                        "mails",
-                        arrayOf("body"),
-                        "user_id = ? and uid = ?",
-                        arrayOf(accountId.toString(), uid.toString()),
-                        null,
-                        null,
-                        null
-                    )
-                    cursor.moveToFirst()
-                    if (cursor.count == 1) {
-                        intent.putExtra("body", cursor.getString(0))
-                    }
-                    cursor.close()
-                    startActivity(intent)
-                }
-            }
-        }
 
         // アカウント追加アクティビティ
         val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
@@ -103,31 +61,6 @@ class MainActivity : AppCompatActivity() {
             // アカウントがない場合追加する
             val intent = Intent(this, AccountAddActivity::class.java)
             startActivityForResult(intent, requestCode)
-        } else {
-            // デフォルトアカウント取得
-            val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
-            val database = dbHelper.readableDatabase
-
-            val cursor = database.query(
-                "users",
-                arrayOf("email", "username", "password"),
-                "user_id = ?",
-                arrayOf(accountId.toString()),
-                null,
-                null,
-                null
-            )
-            cursor.moveToFirst()
-            if (cursor.count == 1) {
-                val addr = cursor.getString(0)
-                host = addr.split('@')[1]
-                user = cursor.getString(1)
-                // 入ってるパスワードはbase64なのでデコード
-                val b64Password = cursor.getString(2)
-                pass = Base64.decode(b64Password.toByteArray(), Base64.DEFAULT)
-                    .toString(Charset.defaultCharset())
-            }
-            cursor.close()
         }
     }
 
@@ -138,9 +71,8 @@ class MainActivity : AppCompatActivity() {
         if (resultCode == RESULT_OK && requestCode == this.requestCode && data != null) {
             // メールアドレス、パスワードを取得
             val addr = data.getStringExtra("address")!!
-            host = addr.split('@')[1]
-            user = addr.split('@')[0]
-            pass = data.getStringExtra("password")!!
+            val user = addr.split('@')[0]
+            val pass = data.getStringExtra("password")!!
             // データべースへ追加
             insertUser(addr, user, pass)
 
@@ -178,16 +110,46 @@ class MainActivity : AppCompatActivity() {
             // アカウントが指定されていない
             Toast.makeText(this, getString(R.string.plz_add_account), Toast.LENGTH_LONG).show()
         } else {
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            // メールクラス生成
-            val mail = Mail(host, user, port, pass)
-            coroutineScope.launch {
-                // 受信処理
-                mail.receive(accountId)
+            // アカウント情報取得
+            val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+            val database = dbHelper.readableDatabase
+
+            val cursor = database.query(
+                "users",
+                arrayOf("email", "username", "password"),
+                "user_id = ?",
+                arrayOf(accountId.toString()),
+                null,
+                null,
+                null
+            )
+            cursor.moveToFirst()
+            if (cursor.count == 1) {
+                // 各種情報取得
+                val addr = cursor.getString(0)
+                val host = addr.split('@')[1]
+                val user = cursor.getString(1)
+                // 入ってるパスワードはbase64なのでデコード
+                val b64Password = cursor.getString(2)
+                val pass = Base64.decode(b64Password.toByteArray(), Base64.DEFAULT)
+                    .toString(Charset.defaultCharset())
+                val coroutineScope = CoroutineScope(Dispatchers.IO)
+                // メールクラス生成
+                val mail = Mail(host, user, port, pass)
+                coroutineScope.launch {
+                    // 受信処理
+                    mail.receive(accountId)
+                }
+            } else {
+                Toast.makeText(this, getString(R.string.account_not_found), Toast.LENGTH_LONG)
+                    .show()
             }
+
+            cursor.close()
         }
     }
 
+    // ユーザをデータベースに追加
     private fun insertUser(email: String, username: String, password: String) {
         val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
         val database = dbHelper.writableDatabase
