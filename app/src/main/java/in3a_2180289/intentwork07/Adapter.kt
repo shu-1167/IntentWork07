@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.recyclerview_item.view.*
 
 class Adapter(private var list: Array<Array<String>>): RecyclerView.Adapter<Adapter.ViewHolder>() {
-    lateinit var listener: OnItemClickListener
+    private lateinit var listener: OnItemClickListener
 
     class ViewHolder(view: View): RecyclerView.ViewHolder(view)
 

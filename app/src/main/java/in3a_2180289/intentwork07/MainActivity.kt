@@ -7,19 +7,12 @@
  */
 package in3a_2180289.intentwork07
 
-import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
-import android.widget.EditText
-import android.widget.LinearLayout
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.google.android.material.textfield.TextInputEditText
-import kotlinx.android.synthetic.main.account_input.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,12 +27,17 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler()
     }
 
+    private val requestCode = 1
+
     // hostname
     private var host = String()
+
     // username
     private var user = String()
+
     // IMAPS port
     private var port = 993
+
     // password
     private var pass = String()
 
@@ -54,31 +52,21 @@ class MainActivity : AppCompatActivity() {
         // 更新イベントリスナー追加
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
 
-        val constraintLayout = layoutInflater.inflate(R.layout.account_input, null)
+        // アカウント追加アクティビティ
+        val intent = Intent(this, AccountAddActivity::class.java)
+        startActivityForResult(intent, requestCode)
+    }
 
-        AlertDialog.Builder(this)
-            // ダイアログタイトルをセット
-            .setTitle(getString(R.string.account_add_dialog))
-            // 入力欄のレイアウトをセット
-            .setView(constraintLayout)
-            // ダイアログ外タッチで閉じないようにする
-            .setCancelable(false)
-            // 「追加」ボタン
-            .setPositiveButton(getString(R.string.account_add_ok)) { _: DialogInterface, _: Int ->
-                // 入力された項目を取得
-                Log.d("Dialog", "OK")
-                val addr: TextInputEditText = constraintLayout.findViewById(R.id.address)
-                val password: TextInputEditText = constraintLayout.findViewById(R.id.password)
-                Log.d("Dialog", addr.text.toString())
-                Log.d("Dialog", password.text.toString())
-                host = addr.text.toString().split('@')[1]
-                user = addr.text.toString().split('@')[0]
-                pass = password.text.toString()
-            // 「後で」ボタン
-            }.setNegativeButton(getString(R.string.account_add_cancel)) { _: DialogInterface, _: Int ->
-                Log.d("Dialog", "Cancelled")
-            }
-            .show()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == RESULT_OK && requestCode == this.requestCode && data != null) {
+            // メールアドレス、パスワードを取得
+            val addr = data.getStringExtra("address")!!
+            host = addr.split('@')[1]
+            user = addr.split('@')[0]
+            pass = data.getStringExtra("password")!!
+        }
     }
 
     private val mOnRefreshListener = SwipeRefreshLayout.OnRefreshListener {
