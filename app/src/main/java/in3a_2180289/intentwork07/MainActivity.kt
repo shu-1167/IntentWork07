@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 
         // アカウント追加アクティビティ
         val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
-        val defAccount = sharedPref.getInt("defaultAccount", -1)
+        val defAccount = sharedPref.getInt("openedAccount", -1)
         if (defAccount == -1) {
             // アカウントがない場合追加する
             val intent = Intent(this, AccountAddActivity::class.java)
@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
 
             // 初期アカウントの場合、デフォルトアカウントに指定
             val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
-            if (sharedPref.getInt("defaultAccount", -1) == -1) {
+            if (sharedPref.getInt("openedAccount", -1) == -1) {
                 val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
                 val database = dbHelper.readableDatabase
 
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
 
                 // デフォルトアカウントをセット
                 val editor = sharedPref.edit()
-                editor.putInt("defaultAccount", userId)
+                editor.putInt("openedAccount", userId)
                 editor.apply()
             }
         }
