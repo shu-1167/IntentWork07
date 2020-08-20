@@ -4,4 +4,5 @@
     <string name="account_input_address">メールアドレス</string>
     <string name="account_input_password">パスワード</string>
     <string name="null_subject">件名なし</string>
+    <string name="failed_add_account">アカウント追加に失敗しました</string>
 </resources>
