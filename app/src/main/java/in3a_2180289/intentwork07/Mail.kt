@@ -44,7 +44,7 @@ class Mail(
         // https://logicalerror.seesaa.net/article/462358077.html
         // http://connector.sourceforge.net/doc-files/Properties.html
         val props = Properties()
-        props.setProperty("mail.imaps.connectiontimeout", "15")
+        props.setProperty("mail.imaps.connectiontimeout", "10000")
         props.setProperty("mail.debug", "true")
         // セッション
         val session: Session = Session.getInstance(props, null)
