@@ -14,6 +14,7 @@ import android.os.Handler
 import android.util.Base64
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
         lateinit var mRecyclerView: RecyclerView
+        const val dbName = "mail"
+        const val dbVersion = 1
 
         // 別スレッド等から処理する用
         val handler = Handler()
@@ -36,8 +39,6 @@ class MainActivity : AppCompatActivity() {
     private var user = String()
     private var port = 993
     private var pass = String()
-    private val dbName = "mail"
-    private val dbVersion = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,14 +47,20 @@ class MainActivity : AppCompatActivity() {
         // view取得
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
+        // アダプタをセット
+        val adapter = Adapter(arrayOf())
+        mRecyclerView.adapter = adapter
+        // レイアウトをセット
+        val layoutManager = LinearLayoutManager(this)
+        mRecyclerView.layoutManager = layoutManager
         mRecyclerView.setHasFixedSize(true)
         // 更新イベントリスナー追加
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
 
         // アカウント追加アクティビティ
         val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
-        val defAccount = sharedPref.getInt("openedAccount", -1)
-        if (defAccount == -1) {
+        val accountId = sharedPref.getInt("openedAccount", -1)
+        if (accountId == -1) {
             // アカウントがない場合追加する
             val intent = Intent(this, AccountAddActivity::class.java)
             startActivityForResult(intent, requestCode)
@@ -66,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                 "users",
                 arrayOf("email", "username", "password"),
                 "user_id = ?",
-                arrayOf(defAccount.toString()),
+                arrayOf(accountId.toString()),
                 null,
                 null,
                 null
@@ -126,12 +133,19 @@ class MainActivity : AppCompatActivity() {
 
     // 引っ張って更新されたら呼ばれる
     private val mOnRefreshListener = SwipeRefreshLayout.OnRefreshListener {
-        val coroutineScope = CoroutineScope(Dispatchers.IO)
-        // メールクラス生成
-        val mail = Mail(host, user, port, pass)
-        coroutineScope.launch {
-            // 受信処理
-            mail.receive()
+        val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
+        val accountId = sharedPref.getInt("openedAccount", -1)
+        if (accountId == -1) {
+            // アカウントが指定されていない
+            Toast.makeText(this, getString(R.string.plz_add_account), Toast.LENGTH_LONG).show()
+        } else {
+            val coroutineScope = CoroutineScope(Dispatchers.IO)
+            // メールクラス生成
+            val mail = Mail(host, user, port, pass)
+            coroutineScope.launch {
+                // 受信処理
+                mail.receive(accountId)
+            }
         }
     }
 

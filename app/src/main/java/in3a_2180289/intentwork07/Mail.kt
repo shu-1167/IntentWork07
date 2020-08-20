@@ -8,11 +8,9 @@
  */
 package in3a_2180289.intentwork07
 
+import android.content.ContentValues
 import android.util.Log
-import androidx.recyclerview.widget.LinearLayoutManager
 import in3a_2180289.intentwork07.MainActivity.Companion.handler
-import in3a_2180289.intentwork07.MainActivity.Companion.mRecyclerView
-import in3a_2180289.intentwork07.MainActivity.Companion.mSwipeRefreshLayout
 import java.text.DateFormat
 import java.util.*
 import javax.mail.*
@@ -26,20 +24,40 @@ class Mail(
     private val pass: String
 ) {
 
-    fun receive() {
+    fun receive(accountId: Int) {
         // 配列を引数にAdapterを生成
         val adapter = Adapter(arrayOf())
-        val recyclerView = mRecyclerView
-        val layoutManager = LinearLayoutManager(recyclerView.context)
+        val recyclerView = MainActivity.mRecyclerView
         // Handlerを使用してメイン(UI)スレッドに処理を依頼する
         handler.post {
             kotlin.run {
-                // レイアウトをセット(先にセットすると引っ張って更新できない)
-                recyclerView.layoutManager = layoutManager
                 // アダプターをセット
                 recyclerView.adapter = adapter
             }
         }
+        // データベース取得
+        val dbHelper =
+            MailDBHelper(recyclerView.context, MainActivity.dbName, null, MainActivity.dbVersion)
+        val database = dbHelper.writableDatabase
+        // 取得済みメール一覧の取得
+        val cursor = database.query(
+            "mails",
+            arrayOf("uid"),
+            "user_id = ?",
+            arrayOf(accountId.toString()),
+            null,
+            null,
+            null
+        )
+        cursor.moveToFirst()
+        val mailList = mutableListOf<Long>()
+        if (cursor.count > 0) {
+            while (cursor.isAfterLast) {
+                mailList.add(cursor.getLong(0))
+                cursor.moveToNext()
+            }
+        }
+        cursor.close()
 
         // https://logicalerror.seesaa.net/article/462358077.html
         // http://connector.sourceforge.net/doc-files/Properties.html
@@ -137,12 +155,32 @@ class Mail(
                     adapter.notifyDataSetChanged()
                 }
             }
+
+            // データベースへの追加処理
+            if (!mailList.contains(messageId)) {
+                // 新規メール
+                val values = ContentValues()
+                values.put("user_id", accountId)
+                values.put("uid", messageId)
+                values.put("subject", subjectText)
+                values.put("sender", addressText)
+                values.put("date", dateText)
+                values.put("body", bodyText)
+
+                try {
+                    database.insertOrThrow("mails", null, values)
+                } catch (ex: Exception) {
+                    Log.e("insertMail", ex.toString())
+                }
+
+                mailList.add(messageId)
+            }
         }
         // 閉じる
         folder.close()
         imap4.close()
 
         // くるくる回ってるのを止める
-        mSwipeRefreshLayout.isRefreshing = false
+        MainActivity.mSwipeRefreshLayout.isRefreshing = false
     }
 }
