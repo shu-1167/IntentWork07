@@ -25,7 +25,6 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.nio.charset.Charset
 
 
 class MainActivity : AppCompatActivity() {
@@ -39,8 +38,7 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler()
     }
 
-    private val requestCode = 1
-    private var port = 993
+    private var adapter = Adapter(arrayOf())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +47,6 @@ class MainActivity : AppCompatActivity() {
         // view取得
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
-        // アダプタをセット
-        val adapter = Adapter(arrayOf())
         mRecyclerView.adapter = adapter
         // レイアウトをセット
         val layoutManager = LinearLayoutManager(this)
@@ -125,7 +121,7 @@ class MainActivity : AppCompatActivity() {
                 // 各種取得
                 val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 // 入力検証用正規表現
-                val addrRegix = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
+                val addrRegix = Regex(pattern = "[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
                 // メールアドレス欄にフォーカス
                 address.requestFocus()
                 positiveButton.isEnabled = false
@@ -143,6 +139,11 @@ class MainActivity : AppCompatActivity() {
                 password.addTextChangedListener(textWatcher)
             }
             dialog.show()
+        } else {
+            // 保存されているメールを取得する
+            val mail = Mail(this, accountId)
+            adapter = mail.getStoredMail()
+            mRecyclerView.adapter = adapter
         }
     }
 
@@ -155,42 +156,18 @@ class MainActivity : AppCompatActivity() {
             // アカウントが指定されていない
             Toast.makeText(this, getString(R.string.plz_add_account), Toast.LENGTH_LONG).show()
         } else {
-            // アカウント情報取得
-            val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
-            val database = dbHelper.readableDatabase
-
-            val cursor = database.query(
-                "users",
-                arrayOf("email", "username", "password"),
-                "user_id = ?",
-                arrayOf(accountId.toString()),
-                null,
-                null,
-                null
-            )
-            cursor.moveToFirst()
-            if (cursor.count == 1) {
-                // 各種情報取得
-                val addr = cursor.getString(0)
-                val host = addr.split('@')[1]
-                val user = cursor.getString(1)
-                // 入ってるパスワードはbase64なのでデコード
-                val b64Password = cursor.getString(2)
-                val pass = Base64.decode(b64Password.toByteArray(), Base64.DEFAULT)
-                    .toString(Charset.defaultCharset())
+            try {
                 val coroutineScope = CoroutineScope(Dispatchers.IO)
                 // メールクラス生成
-                val mail = Mail(host, user, port, pass)
+                val mail = Mail(this, accountId)
                 coroutineScope.launch {
                     // 受信処理
-                    mail.receive(accountId)
+                    mail.receive(adapter)
                 }
-            } else {
+            } catch (ex: IllegalArgumentException) {
                 Toast.makeText(this, getString(R.string.account_not_found), Toast.LENGTH_LONG)
                     .show()
             }
-
-            cursor.close()
         }
     }
 

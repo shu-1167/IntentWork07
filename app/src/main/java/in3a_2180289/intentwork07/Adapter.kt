@@ -33,16 +33,20 @@ class Adapter(private var list: Array<Array<String>>): RecyclerView.Adapter<Adap
 
     // ViewHolderに表示するテキストを設定
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.itemView.textView1.text = list[position][0]
-        holder.itemView.textView2.text = list[position][1]
+        holder.itemView.textView1.text = list[position][1]
+        holder.itemView.textView2.text = list[position][2]
         // クリックイベント
         holder.itemView.setOnClickListener {
-            listener.onItemClickListener(it, position, list[position][2].toLong())
+            listener.onItemClickListener(it, position, list[position][0].toLong())
         }
     }
 
     fun addItem(model: Array<String>) {
         list += model
+    }
+
+    fun sort() {
+        list.sortByDescending { it.first() }
     }
 
     //インターフェースの作成
