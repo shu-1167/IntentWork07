@@ -268,7 +268,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 val database = dbHelper.readableDatabase
                 val cursor = database.query(
                     "mails",
-                    arrayOf("body"),
+                    arrayOf("body", "subject"),
                     "user_id = ? and uid = ?",
                     arrayOf(accountId.toString(), uid.toString()),
                     null,
@@ -278,6 +278,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 cursor.moveToFirst()
                 if (cursor.count == 1) {
                     intent.putExtra("body", cursor.getString(0))
+                    intent.putExtra("subject", cursor.getString(1))
                 }
                 cursor.close()
                 context.startActivity(intent)
