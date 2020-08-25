@@ -268,7 +268,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 val database = dbHelper.readableDatabase
                 val cursor = database.query(
                     "mails",
-                    arrayOf("body", "subject"),
+                    arrayOf("body", "subject", "mime_type"),
                     "user_id = ? and uid = ?",
                     arrayOf(accountId.toString(), uid.toString()),
                     null,
@@ -279,6 +279,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 if (cursor.count == 1) {
                     intent.putExtra("body", cursor.getString(0))
                     intent.putExtra("subject", cursor.getString(1))
+                    intent.putExtra("mimeType", cursor.getString(2))
                 }
                 cursor.close()
                 context.startActivity(intent)

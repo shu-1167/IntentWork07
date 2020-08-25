@@ -13,8 +13,10 @@ class MailViewActivity : AppCompatActivity() {
         title = intent.getStringExtra("subject")
         // 本文の取得
         val body = intent.getStringExtra("body")
+        // MIMEタイプの取得
+        val mime = intent.getStringExtra("mimeType")
         val webView: WebView = findViewById(R.id.webView)!!
         // 受け取ったメール本文を表示
-        webView.loadData(body, "text/plain", "utf-8")
+        webView.loadData(body, mime, "utf-8")
     }
 }

@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         lateinit var mSwipeRefreshLayout: SwipeRefreshLayout
         lateinit var mRecyclerView: RecyclerView
         const val dbName = "mail"
-        const val dbVersion = 1
+        const val dbVersion = 2
 
         // 別スレッド等から処理する用
         val handler = Handler()
