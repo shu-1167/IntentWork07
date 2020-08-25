@@ -315,4 +315,29 @@ class Mail constructor(_context: Context, _accountId: Int) {
         adapter.setOnItemClickListener(mOnItemClickListener)
         return adapter
     }
+
+    fun getEmailAddress(): String {
+        // 現在のユーザのメールアドレスを返す
+        val dbHelper = MailDBHelper(context, MainActivity.dbName, null, MainActivity.dbVersion)
+        val database = dbHelper.readableDatabase
+
+        val cursor = database.query(
+            "users",
+            arrayOf("email"),
+            "user_id = ?",
+            arrayOf(accountId.toString()),
+            null,
+            null,
+            null
+        )
+        cursor.moveToFirst()
+        if (cursor.count == 1) {
+            val email = cursor.getString(0)
+            cursor.close()
+            return email
+        } else {
+            cursor.close()
+            throw IllegalArgumentException("id: $accountId is not found")
+        }
+    }
 }

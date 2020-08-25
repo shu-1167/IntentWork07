@@ -80,6 +80,8 @@ class MainActivity : AppCompatActivity() {
                     val pass = password.text.toString()
                     // データべースへ追加
                     insertUser(addr, user, pass)
+                    // タイトル設定
+                    title = addr
 
                     // 初期アカウントの場合、デフォルトアカウントに指定
                     if (sharedPref.getInt("openedAccount", -1) == -1) {
@@ -121,7 +123,7 @@ class MainActivity : AppCompatActivity() {
                 // 各種取得
                 val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 // 入力検証用正規表現
-                val addrRegix = Regex(pattern = "[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
+                val addrRegix = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
                 // メールアドレス欄にフォーカス
                 address.requestFocus()
                 positiveButton.isEnabled = false
@@ -144,6 +146,8 @@ class MainActivity : AppCompatActivity() {
             val mail = Mail(this, accountId)
             adapter = mail.getStoredMail()
             mRecyclerView.adapter = adapter
+            // タイトル設定
+            title = mail.getEmailAddress()
         }
     }
 
