@@ -12,6 +12,8 @@ class MailViewActivity : AppCompatActivity() {
 
         val bodyText: TextView = findViewById(R.id.textView)
         bodyText.movementMethod = ScrollingMovementMethod()
+        // テキストを選択(コピー)できるようにする
+        bodyText.setTextIsSelectable(true)
         // 受け取ったメール本文を表示
         bodyText.text = intent.getStringExtra("body")
         title = intent.getStringExtra("subject")
