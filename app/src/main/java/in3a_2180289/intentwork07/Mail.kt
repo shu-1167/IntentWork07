@@ -175,26 +175,15 @@ class Mail constructor(_context: Context, _accountId: Int) {
 
             // 本文(  UID より取得 )
             val part: Part = msgs[i]
-            var bodyText = ""
-            if (part.isMimeType("text/plain")) {
-                bodyText = part.content.toString()
-            } else if (part.isMimeType("multipart/*")) {
-                // マルチパートの先頭
-                val mp = part.content as MimeMultipart
-                bodyText = mp.getBodyPart(0).content.toString()
-                for (j in 1..mp.count.dec()) {
-                    if (mp.getBodyPart(j).isMimeType("text/html")) {
-                        val htmlText = mp.getBodyPart(j).content.toString()
-                        // Log.d(this.javaClass.simpleName, "HtmlText = $htmlText")
-                    }
-                }
+            // bodyText = mp.getBodyPart(0).content.toString()
+            // 本文取得
+            val (bodyText, mimeType) = getBodyText(part)
 //                    var filename: String = (mp.getBodyPart(1) as Part).getFileName()
 //                    // ファイル名があったら保存
 //                    if (filename != null) {
 //                        println("ファイル名 = $filename")
 //                        val file = File(filename)
 //                        (mp.getBodyPart(1) as MimeBodyPart).saveFile(file)
-            }
 
 // 3つ目がある場合
 //                    if (mp.count > 2) {
@@ -229,6 +218,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 values.put("sender", addressText)
                 values.put("date", dateText)
                 values.put("body", bodyText)
+                values.put("mime_type", mimeType)
 
                 try {
                     database.insertOrThrow("mails", null, values)
@@ -277,7 +267,9 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 )
                 cursor.moveToFirst()
                 if (cursor.count == 1) {
-                    intent.putExtra("body", cursor.getString(0))
+                    val body = cursor.getString(0)
+                    Log.d("Mail", body.length.toString())
+                    intent.putExtra("body", body)
                     intent.putExtra("subject", cursor.getString(1))
                     intent.putExtra("mimeType", cursor.getString(2))
                 }
@@ -341,5 +333,57 @@ class Mail constructor(_context: Context, _accountId: Int) {
             cursor.close()
             throw IllegalArgumentException("id: $accountId is not found")
         }
+    }
+
+    private fun getBodyText(part: Part): Pair<String, String> {
+        var bodyText = ""
+        var mimeType = ""
+
+        when {
+            part.isMimeType("text/html") -> {
+                bodyText = part.content.toString()
+                mimeType = "text/html"
+            }
+            part.isMimeType("text/plain") -> {
+                bodyText = part.content.toString()
+                mimeType = "text/plain"
+            }
+            part.isMimeType("multipart/*") -> {
+                val pair = getBodyText(part.content as MimeMultipart)
+                bodyText = pair.first
+                mimeType = pair.second
+            }
+        }
+        return bodyText to mimeType
+    }
+
+    private fun getBodyText(mp: MimeMultipart): Pair<String, String> {
+        var bodyText = ""
+        var mimeType = ""
+
+        loop@ for (j in 0..mp.count.dec()) {
+            val mpPart = mp.getBodyPart((j))
+            Log.d(this.javaClass.simpleName, "mp.count: ${mp.count}")
+            Log.d(this.javaClass.simpleName, "now: $j")
+            Log.d(this.javaClass.simpleName, "mime: ${mpPart.getHeader("Content-Type")[0]}")
+            when {
+                mpPart.isMimeType("text/html") -> {
+                    bodyText = mpPart.content.toString()
+                    mimeType = "text/html"
+                    // mimeType = mpPart.getHeader("Content-Type")[0].toString()
+                    break@loop
+                }
+                mpPart.isMimeType("text/plain") -> {
+                    bodyText = mpPart.content.toString()
+                    mimeType = "text/plain"
+                }
+                mpPart.isMimeType("multipart/*") -> {
+                    val pair = getBodyText(mpPart.content as MimeMultipart)
+                    bodyText = pair.first
+                    mimeType = pair.second
+                }
+            }
+        }
+        return bodyText to mimeType
     }
 }
