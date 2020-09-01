@@ -18,11 +18,15 @@ import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.navigation.NavigationView
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPref: SharedPreferences
     private var adapter = Adapter(arrayOf())
     private var mail: Mail? = null
+    private lateinit var navMenu: Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +58,26 @@ class MainActivity : AppCompatActivity() {
         sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar!!.setDisplayShowHomeEnabled(true)
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
+        val toggle = ActionBarDrawerToggle(
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.account_add_ok,
+            R.string.account_add_cancel
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        navMenu = navigationView.menu
+        navigationView.setNavigationItemSelectedListener {
+            Toast.makeText(this, it.title, Toast.LENGTH_SHORT).show()
+            true
+        }
+
         // レイアウトをセット
         val layoutManager = LinearLayoutManager(this)
         mRecyclerView.layoutManager = layoutManager
@@ -188,6 +213,8 @@ class MainActivity : AppCompatActivity() {
                 val editor = sharedPref.edit()
                 editor.putInt("openedAccount", userId)
                 editor.apply()
+                // ドロワーメニューに追加
+                navMenu.add(addr)
                 // 初期アダプターをセット
                 adapter = Adapter(arrayOf())
                 mRecyclerView.adapter = adapter
