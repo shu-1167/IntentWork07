@@ -110,7 +110,17 @@ class Mail constructor(_context: Context, _accountId: Int) {
         val imap4: Store = session.getStore("imaps")
 
         // 接続
-        imap4.connect(host, port, user, pass)
+        try {
+            imap4.connect(host, port, user, pass)
+        } catch (ex: AuthenticationFailedException) {
+            handler.post {
+                kotlin.run {
+                    Toast.makeText(context, "認証に失敗しました", Toast.LENGTH_LONG).show()
+                    MainActivity.mSwipeRefreshLayout.isRefreshing = false
+                }
+            }
+            return
+        }
 
         // https://stackoverflow.com/questions/11435947/how-do-i-uniquely-identify-a-java-mail-message-using-imap
         val folder = imap4.getFolder("INBOX")
