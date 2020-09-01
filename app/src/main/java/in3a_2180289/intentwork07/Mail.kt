@@ -125,7 +125,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
 
             // UID を取得
             val messageId = uf.getUID(msgs[i])
-            Log.d(this.javaClass.simpleName, "UID: $messageId")
+            Log.d(this.javaClass.simpleName, "Receiving UID: $messageId")
 
             // From
             val address: Array<Address> = msgs[i].from

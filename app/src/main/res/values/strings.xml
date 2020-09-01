@@ -9,4 +9,5 @@
     <string name="failed_add_account">アカウント追加に失敗しました</string>
     <string name="plz_add_account">アカウントを追加してください</string>
     <string name="account_not_found">アカウントが見つかりませんでした</string>
+    <string name="account_add_menu">アカウントを追加</string>
 </resources>

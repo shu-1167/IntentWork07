@@ -9,12 +9,14 @@ package in3a_2180289.intentwork07
 
 import android.content.ContentValues
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
-import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -38,6 +40,8 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler()
     }
 
+
+    private lateinit var sharedPref: SharedPreferences
     private var adapter = Adapter(arrayOf())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // view取得
+        sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
         mRecyclerView.adapter = adapter
@@ -56,91 +61,10 @@ class MainActivity : AppCompatActivity() {
         mSwipeRefreshLayout.setOnRefreshListener(mOnRefreshListener)
 
         // アカウント追加アクティビティ
-        val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
         val accountId = sharedPref.getInt("openedAccount", -1)
         if (accountId == -1) {
             // アカウントがない場合追加する
-            // view取得
-            val constraintLayout = layoutInflater.inflate(R.layout.account_input, null)
-            val address: TextInputEditText = constraintLayout.findViewById(R.id.address)
-            val password: TextInputEditText = constraintLayout.findViewById(R.id.password)
-
-            val dialog = AlertDialog.Builder(this)
-                // ダイアログタイトルをセット
-                .setTitle(getString(R.string.account_add_dialog))
-                // 入力欄のレイアウトをセット
-                .setView(constraintLayout)
-                // ダイアログ外タッチで閉じないようにする
-                .setCancelable(false)
-                .setPositiveButton(getString(R.string.account_add_ok)) { _: DialogInterface, _: Int ->
-                    // 「追加」ボタン
-                    // 入力された項目を取得
-                    val addr = address.text.toString()
-                    val user = addr.split('@')[0]
-                    val pass = password.text.toString()
-                    // データべースへ追加
-                    insertUser(addr, user, pass)
-                    // タイトル設定
-                    title = addr
-
-                    // 初期アカウントの場合、デフォルトアカウントに指定
-                    if (sharedPref.getInt("openedAccount", -1) == -1) {
-                        val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
-                        val database = dbHelper.readableDatabase
-
-                        // 念のため追加したアカウントのuser_idを取得
-                        val cursor =
-                            database.query(
-                                "users",
-                                arrayOf("MAX(user_id)"),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null
-                            )
-                        cursor.moveToFirst()
-                        val userId = if (cursor.count == 1) {
-                            cursor.getInt(0)
-                        } else {
-                            // データがない
-                            -1
-                        }
-                        cursor.close()
-
-                        // デフォルトアカウントをセット
-                        val editor = sharedPref.edit()
-                        editor.putInt("openedAccount", userId)
-                        editor.apply()
-                    }
-                }
-                .setNegativeButton(getString(R.string.account_add_cancel)) { _: DialogInterface, _: Int ->
-                    // 「後で」ボタン
-                    Log.d("Dialog", "Cancelled")
-                }
-                .create()
-            dialog.setOnShowListener {
-                // 各種取得
-                val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                // 入力検証用正規表現
-                val addrRegix = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
-                // メールアドレス欄にフォーカス
-                address.requestFocus()
-                positiveButton.isEnabled = false
-                val textWatcher = object : TextWatcher {
-                    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-                    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                        // 入力チェック
-                        positiveButton.isEnabled =
-                            addrRegix.matches(address.text.toString()) && password.text!!.isNotEmpty()
-                    }
-
-                    override fun afterTextChanged(p0: Editable?) {}
-                }
-                address.addTextChangedListener(textWatcher)
-                password.addTextChangedListener(textWatcher)
-            }
-            dialog.show()
+            addAccount()
         } else {
             // 保存されているメールを取得する
             val mail = Mail(this, accountId)
@@ -154,7 +78,6 @@ class MainActivity : AppCompatActivity() {
 
     // 引っ張って更新されたら呼ばれる
     private val mOnRefreshListener = SwipeRefreshLayout.OnRefreshListener {
-        val sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
         val accountId = sharedPref.getInt("openedAccount", -1)
         if (accountId == -1) {
             // アカウントが指定されていない
@@ -192,5 +115,106 @@ class MainActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, getString(R.string.failed_add_account), Toast.LENGTH_LONG).show()
         }
+    }
+
+    // オプションメニュー作成
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.home_menu, menu)
+        return true
+    }
+
+    // オプションメニュー内の項目が押されたら呼ばれる
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.account_add -> {
+                // アカウント追加
+                addAccount()
+                return true
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    // アカウント追加処理
+    private fun addAccount() {
+        // view取得
+        val constraintLayout = layoutInflater.inflate(R.layout.account_input, null)
+        val address: TextInputEditText = constraintLayout.findViewById(R.id.address)
+        val password: TextInputEditText = constraintLayout.findViewById(R.id.password)
+
+        val dialog = AlertDialog.Builder(this)
+            // ダイアログタイトルをセット
+            .setTitle(getString(R.string.account_add_dialog))
+            // 入力欄のレイアウトをセット
+            .setView(constraintLayout)
+            // ダイアログ外タッチで閉じないようにする
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.account_add_ok)) { _: DialogInterface, _: Int ->
+                // 「追加」ボタン
+                // 入力された項目を取得
+                val addr = address.text.toString()
+                val user = addr.split('@')[0]
+                val pass = password.text.toString()
+                // データべースへ追加
+                insertUser(addr, user, pass)
+                // タイトル設定
+                title = addr
+
+                // 初期アカウントの場合、デフォルトアカウントに指定
+                if (sharedPref.getInt("openedAccount", -1) == -1) {
+                    val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+                    val database = dbHelper.readableDatabase
+
+                    // 念のため追加したアカウントのuser_idを取得
+                    val cursor =
+                        database.query(
+                            "users",
+                            arrayOf("MAX(user_id)"),
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                        )
+                    cursor.moveToFirst()
+                    val userId = if (cursor.count == 1) {
+                        cursor.getInt(0)
+                    } else {
+                        // データがない
+                        -1
+                    }
+                    cursor.close()
+
+                    // デフォルトアカウントをセット
+                    val editor = sharedPref.edit()
+                    editor.putInt("openedAccount", userId)
+                    editor.apply()
+                }
+            }
+            // 「後で」ボタン
+            .setNegativeButton(getString(R.string.account_add_cancel)) { _: DialogInterface, _: Int -> }
+            .create()
+        dialog.setOnShowListener {
+            // 各種取得
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            // 入力検証用正規表現
+            val addrRegix = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
+            // メールアドレス欄にフォーカス
+            address.requestFocus()
+            positiveButton.isEnabled = false
+            val textWatcher = object : TextWatcher {
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    // 入力チェック
+                    positiveButton.isEnabled =
+                        addrRegix.matches(address.text.toString()) && password.text!!.isNotEmpty()
+                }
+
+                override fun afterTextChanged(p0: Editable?) {}
+            }
+            address.addTextChangedListener(textWatcher)
+            password.addTextChangedListener(textWatcher)
+        }
+        dialog.show()
     }
 }
