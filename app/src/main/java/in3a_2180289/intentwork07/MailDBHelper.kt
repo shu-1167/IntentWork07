@@ -21,12 +21,15 @@ class MailDBHelper(
 ) : SQLiteOpenHelper(context, databaseName, factory, version) {
     override fun onCreate(database: SQLiteDatabase?) {
         database?.execSQL("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, username TEXT, password TEXT)")
-        database?.execSQL("CREATE TABLE IF NOT EXISTS mails (user_id INTEGER, uid INTEGER, subject TEXT, sender TEXT, date TEXT, body BLOB, mime_type TEXT, PRIMARY KEY(user_id, uid))")
+        database?.execSQL("CREATE TABLE IF NOT EXISTS mails (user_id INTEGER, uid INTEGER, subject TEXT, sender TEXT, date TEXT, body BLOB, mime_type TEXT, charset TEXT, PRIMARY KEY(user_id, uid))")
     }
 
     override fun onUpgrade(database: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
         if (oldVersion < newVersion) {
-            if (newVersion == 2) database?.execSQL("ALTER TABLE mails ADD COLUMN mime_type TEXT DEFAULT 'text/plain'")
+            if (newVersion == 2) {
+                database?.execSQL("ALTER TABLE mails ADD COLUMN mime_type TEXT DEFAULT 'text/plain'")
+                database?.execSQL("ALTER TABLE mails ADD COLUMN charset TEXT DEFAULT 'utf-8'")
+            }
         }
     }
 }

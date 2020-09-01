@@ -125,7 +125,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
 
             // UID を取得
             val messageId = uf.getUID(msgs[i])
-            // Log.d(this.javaClass.simpleName, "UID = $messageId")
+            Log.d(this.javaClass.simpleName, "UID: $messageId")
 
             // From
             val address: Array<Address> = msgs[i].from
@@ -161,7 +161,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 // 件名がない場合、"(件名なし)"を代入
                 context.getString(R.string.null_subject)
             }
-            Log.d(this.javaClass.simpleName, "Subject = $subjectText")
+            // Log.d(this.javaClass.simpleName, "Subject = $subjectText")
 
             val date: Date = if (msgs[i].sentDate != null) {
                 // Dateヘッダ(送信日時)がある場合、そちらを使用
@@ -177,7 +177,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
             val part: Part = msgs[i]
             // bodyText = mp.getBodyPart(0).content.toString()
             // 本文取得
-            val (bodyText, mimeType) = getBodyText(part)
+            val (bodyText, charset, mimeType) = getBodyText(part)
 //                    var filename: String = (mp.getBodyPart(1) as Part).getFileName()
 //                    // ファイル名があったら保存
 //                    if (filename != null) {
@@ -218,6 +218,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 values.put("sender", addressText)
                 values.put("date", dateText)
                 values.put("body", bodyText)
+                values.put("charset", charset)
                 values.put("mime_type", mimeType)
 
                 try {
@@ -258,7 +259,7 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 val database = dbHelper.readableDatabase
                 val cursor = database.query(
                     "mails",
-                    arrayOf("body", "subject", "mime_type"),
+                    arrayOf("body", "subject", "charset", "mime_type"),
                     "user_id = ? and uid = ?",
                     arrayOf(accountId.toString(), uid.toString()),
                     null,
@@ -268,10 +269,10 @@ class Mail constructor(_context: Context, _accountId: Int) {
                 cursor.moveToFirst()
                 if (cursor.count == 1) {
                     val body = cursor.getString(0)
-                    Log.d("Mail", body.length.toString())
                     intent.putExtra("body", body)
                     intent.putExtra("subject", cursor.getString(1))
-                    intent.putExtra("mimeType", cursor.getString(2))
+                    intent.putExtra("encoding", cursor.getString(2))
+                    intent.putExtra("mimeType", cursor.getString(3))
                 }
                 cursor.close()
                 context.startActivity(intent)
@@ -335,55 +336,90 @@ class Mail constructor(_context: Context, _accountId: Int) {
         }
     }
 
-    private fun getBodyText(part: Part): Pair<String, String> {
+    private fun getBodyText(part: Part): Triple<String, String, String> {
         var bodyText = ""
         var mimeType = ""
+        var charset = ""
+        val charsetRegex = ".*charset=\"?([^\";]+).*?$".toRegex(RegexOption.IGNORE_CASE)
 
         when {
             part.isMimeType("text/html") -> {
                 bodyText = part.content.toString()
                 mimeType = "text/html"
+                val match = charsetRegex.matchEntire(part.getHeader("Content-Type")[0].toString())
+                charset = if (match != null) {
+                    match.groupValues[1].toLowerCase(Locale.ROOT)
+                } else {
+                    "utf-8"
+                }
             }
             part.isMimeType("text/plain") -> {
                 bodyText = part.content.toString()
                 mimeType = "text/plain"
+                val match = if (part.getHeader("Content-Type") != null) {
+                    charsetRegex.matchEntire(part.getHeader("Content-Type")[0].toString())
+                } else {
+                    null
+                }
+                charset = if (match != null) {
+                    match.groupValues[1].toLowerCase(Locale.ROOT)
+                } else {
+                    "utf-8"
+                }
             }
             part.isMimeType("multipart/*") -> {
-                val pair = getBodyText(part.content as MimeMultipart)
-                bodyText = pair.first
-                mimeType = pair.second
+                val triple = getBodyText(part.content as MimeMultipart)
+                bodyText = triple.first
+                charset = triple.second
+                mimeType = triple.third
             }
         }
-        return bodyText to mimeType
+        return Triple(bodyText, charset, mimeType)
     }
 
-    private fun getBodyText(mp: MimeMultipart): Pair<String, String> {
+    private fun getBodyText(mp: MimeMultipart): Triple<String, String, String> {
         var bodyText = ""
         var mimeType = ""
+        var charset = ""
+        val charsetRegex = ".*charset=\"?([^\";]+).*?$".toRegex(RegexOption.IGNORE_CASE)
 
         loop@ for (j in 0..mp.count.dec()) {
             val mpPart = mp.getBodyPart((j))
-            Log.d(this.javaClass.simpleName, "mp.count: ${mp.count}")
-            Log.d(this.javaClass.simpleName, "now: $j")
-            Log.d(this.javaClass.simpleName, "mime: ${mpPart.getHeader("Content-Type")[0]}")
             when {
                 mpPart.isMimeType("text/html") -> {
                     bodyText = mpPart.content.toString()
                     mimeType = "text/html"
-                    // mimeType = mpPart.getHeader("Content-Type")[0].toString()
+                    val match = if (mpPart.getHeader("Content-Type") != null) {
+                        charsetRegex.matchEntire(mpPart.getHeader("Content-Type")[0].toString())
+                    } else {
+                        null
+                    }
+                    charset = if (match != null) {
+                        match.groupValues[1].toLowerCase(Locale.ROOT)
+                    } else {
+                        "utf-8"
+                    }
                     break@loop
                 }
                 mpPart.isMimeType("text/plain") -> {
                     bodyText = mpPart.content.toString()
                     mimeType = "text/plain"
+                    val match =
+                        charsetRegex.matchEntire(mpPart.getHeader("Content-Type")[0].toString())
+                    charset = if (match != null) {
+                        match.groupValues[1].toLowerCase(Locale.ROOT)
+                    } else {
+                        "utf-8"
+                    }
                 }
                 mpPart.isMimeType("multipart/*") -> {
-                    val pair = getBodyText(mpPart.content as MimeMultipart)
-                    bodyText = pair.first
-                    mimeType = pair.second
+                    val triple = getBodyText(mpPart.content as MimeMultipart)
+                    bodyText = triple.first
+                    charset = triple.second
+                    mimeType = triple.third
                 }
             }
         }
-        return bodyText to mimeType
+        return Triple(bodyText, charset, mimeType)
     }
 }
