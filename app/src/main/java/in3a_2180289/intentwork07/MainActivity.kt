@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var sharedPref: SharedPreferences
     private var adapter = Adapter(arrayOf())
+    private var mail: Mail? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +53,6 @@ class MainActivity : AppCompatActivity() {
         sharedPref = getSharedPreferences("mail", MODE_PRIVATE)
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
-        mRecyclerView.adapter = adapter
         // レイアウトをセット
         val layoutManager = LinearLayoutManager(this)
         mRecyclerView.layoutManager = layoutManager
@@ -67,11 +67,11 @@ class MainActivity : AppCompatActivity() {
             addAccount()
         } else {
             // 保存されているメールを取得する
-            val mail = Mail(this, accountId)
-            adapter = mail.getStoredMail()
+            mail = Mail(this, accountId)
+            adapter = mail!!.getStoredMail()
             mRecyclerView.adapter = adapter
             // タイトル設定
-            title = mail.getEmailAddress()
+            title = mail!!.getEmailAddress()
         }
     }
 
@@ -86,10 +86,12 @@ class MainActivity : AppCompatActivity() {
             try {
                 val coroutineScope = CoroutineScope(Dispatchers.IO)
                 // メールクラス生成
-                val mail = Mail(this, accountId)
+                if (mail == null) {
+                    mail = Mail(this, accountId)
+                }
+                // 受信処理
                 coroutineScope.launch {
-                    // 受信処理
-                    mail.receive(adapter)
+                    mail!!.receive(adapter)
                 }
             } catch (ex: IllegalArgumentException) {
                 Toast.makeText(this, getString(R.string.account_not_found), Toast.LENGTH_LONG)
@@ -159,37 +161,37 @@ class MainActivity : AppCompatActivity() {
                 insertUser(addr, user, pass)
                 // タイトル設定
                 title = addr
+                // 追加したアドレスのuser_idをDBから取得
+                val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+                val database = dbHelper.readableDatabase
 
-                // 初期アカウントの場合、デフォルトアカウントに指定
-                if (sharedPref.getInt("openedAccount", -1) == -1) {
-                    val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
-                    val database = dbHelper.readableDatabase
-
-                    // 念のため追加したアカウントのuser_idを取得
-                    val cursor =
-                        database.query(
-                            "users",
-                            arrayOf("MAX(user_id)"),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null
-                        )
-                    cursor.moveToFirst()
-                    val userId = if (cursor.count == 1) {
-                        cursor.getInt(0)
-                    } else {
-                        // データがない
-                        -1
-                    }
-                    cursor.close()
-
-                    // デフォルトアカウントをセット
-                    val editor = sharedPref.edit()
-                    editor.putInt("openedAccount", userId)
-                    editor.apply()
+                val cursor =
+                    database.query(
+                        "users",
+                        arrayOf("user_id"),
+                        "email = ?",
+                        arrayOf(addr),
+                        null,
+                        null,
+                        null
+                    )
+                cursor.moveToFirst()
+                val userId = if (cursor.count == 1) {
+                    cursor.getInt(0)
+                } else {
+                    // データがない
+                    -1
                 }
+                cursor.close()
+
+                // デフォルトアカウントをセット
+                val editor = sharedPref.edit()
+                editor.putInt("openedAccount", userId)
+                editor.apply()
+                // 初期アダプターをセット
+                adapter = Adapter(arrayOf())
+                mRecyclerView.adapter = adapter
+                mail = null
             }
             // 「後で」ボタン
             .setNegativeButton(getString(R.string.account_add_cancel)) { _: DialogInterface, _: Int -> }
