@@ -73,6 +73,29 @@ class MainActivity : AppCompatActivity() {
         toggle.syncState()
         val navigationView: NavigationView = findViewById(R.id.nav_view)
         navMenu = navigationView.menu
+        // 既存アカウント一覧を取得
+        val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+        val database = dbHelper.readableDatabase
+
+        val cursor =
+            database.query(
+                "users",
+                arrayOf("email"),
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        cursor.moveToFirst()
+        if (cursor.count > 0) {
+            while (!cursor.isAfterLast) {
+                navMenu.add(cursor.getString(0))
+                cursor.moveToNext()
+            }
+        }
+        cursor.close()
+        // NavigationViewのアイテム選択リスナー
         navigationView.setNavigationItemSelectedListener {
             Toast.makeText(this, it.title, Toast.LENGTH_SHORT).show()
             true
