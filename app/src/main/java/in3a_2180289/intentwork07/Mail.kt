@@ -15,7 +15,6 @@ import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import in3a_2180289.intentwork07.MainActivity.Companion.handler
 import java.nio.charset.Charset
 import java.text.DateFormat
@@ -252,9 +251,6 @@ class Mail constructor(_context: Context, _accountId: Int) {
     private val mOnItemClickListener = object : Adapter.OnItemClickListener {
         override fun onItemClickListener(view: View, position: Int, uid: Long) {
             // 現在のアカウントを取得
-            val sharedPref =
-                context.getSharedPreferences("mail", AppCompatActivity.MODE_PRIVATE)
-            val accountId = sharedPref.getInt("openedAccount", -1)
             if (accountId == -1) {
                 // アカウントが指定されていない
                 Toast.makeText(
@@ -283,6 +279,10 @@ class Mail constructor(_context: Context, _accountId: Int) {
                     intent.putExtra("subject", cursor.getString(1))
                     intent.putExtra("encoding", cursor.getString(2))
                     intent.putExtra("mimeType", cursor.getString(3))
+                } else {
+                    Toast.makeText(context, "acid: $accountId, uid: $uid", Toast.LENGTH_SHORT)
+                        .show()
+                    return
                 }
                 cursor.close()
                 context.startActivity(intent)

@@ -22,6 +22,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -77,7 +78,7 @@ class MainActivity : AppCompatActivity() {
         val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
         val database = dbHelper.readableDatabase
 
-        val cursor =
+        var cursor =
             database.query(
                 "users",
                 arrayOf("email"),
@@ -97,8 +98,35 @@ class MainActivity : AppCompatActivity() {
         cursor.close()
         // NavigationViewのアイテム選択リスナー
         navigationView.setNavigationItemSelectedListener {
-            Toast.makeText(this, it.title, Toast.LENGTH_SHORT).show()
-            true
+            // メールアドレスからuser_idを取得
+            cursor = database.query(
+                "users",
+                arrayOf("user_id"),
+                "email = ?",
+                arrayOf(it.title.toString()),
+                null,
+                null,
+                null
+            )
+            cursor.moveToNext()
+
+            val isSuccess = if (cursor.count == 1) {
+                val accountId = cursor.getString(0).toInt()
+                // user_idからメールを取得
+                mail = Mail(this, accountId)
+                adapter = mail!!.getStoredMail()
+                mRecyclerView.adapter = adapter
+                title = mail!!.getEmailAddress()
+                true
+            } else {
+                // 選択されたアカウントがない
+                Toast.makeText(this, getString(R.string.account_not_found), Toast.LENGTH_LONG)
+                    .show()
+                false
+            }
+            cursor.close()
+            drawerLayout.closeDrawer(GravityCompat.START)
+            isSuccess
         }
 
         // レイアウトをセット

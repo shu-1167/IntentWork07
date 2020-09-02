@@ -12,4 +12,5 @@
     <string name="account_add_menu">アカウントを追加</string>
     <string name="drawer_open">ドロワーを開く</string>
     <string name="drawer_close">ドロワーを閉じる</string>
+    <string name="mail_not_found">メールが見つかりません</string>
 </resources>
