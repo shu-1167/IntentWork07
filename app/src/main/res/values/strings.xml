@@ -10,4 +10,6 @@
     <string name="plz_add_account">アカウントを追加してください</string>
     <string name="account_not_found">アカウントが見つかりませんでした</string>
     <string name="account_add_menu">アカウントを追加</string>
+    <string name="drawer_open">ドロワーを開く</string>
+    <string name="drawer_close">ドロワーを閉じる</string>
 </resources>

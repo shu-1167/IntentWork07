@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
             this,
             drawerLayout,
             toolbar,
-            R.string.account_add_ok,
-            R.string.account_add_cancel
+            R.string.drawer_open,
+            R.string.drawer_close
         )
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
