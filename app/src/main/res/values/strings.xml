@@ -15,4 +15,9 @@
     <string name="mail_not_found">メールが見つかりません</string>
     <string name="auth_failed">認証に失敗しました</string>
     <string name="connection_timeout">接続がタイムアウトしました</string>
+    <string name="account_remove_dialog">アカウントを削除</string>
+    <string name="account_remove_menu">アカウントを削除</string>
+    <string name="account_remove_confirm">このアカウントを削除しますか？</string>
+    <string name="account_remove_ok">削除</string>
+    <string name="account_remove_cancel">キャンセル</string>
 </resources>

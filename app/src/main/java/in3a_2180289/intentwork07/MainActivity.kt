@@ -60,9 +60,12 @@ class MainActivity : AppCompatActivity() {
         mSwipeRefreshLayout = findViewById(R.id.swiperefresh)
         mRecyclerView = findViewById(R.id.recyclerview)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        // toolbarを連携
         setSupportActionBar(toolbar)
         supportActionBar!!.setDisplayShowHomeEnabled(true)
-        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
+        // トグルメニュー(左上の三本線)を追加
         val toggle = ActionBarDrawerToggle(
             this,
             drawerLayout,
@@ -72,34 +75,16 @@ class MainActivity : AppCompatActivity() {
         )
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
-        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        // NavigationViewのメニューを取得
         navMenu = navigationView.menu
-        // 既存アカウント一覧を取得
-        val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
-        val database = dbHelper.readableDatabase
-
-        var cursor =
-            database.query(
-                "users",
-                arrayOf("email"),
-                null,
-                null,
-                null,
-                null,
-                null
-            )
-        cursor.moveToFirst()
-        if (cursor.count > 0) {
-            while (!cursor.isAfterLast) {
-                navMenu.add(cursor.getString(0))
-                cursor.moveToNext()
-            }
-        }
-        cursor.close()
+        // NavigationViewのitemを更新
+        refreshNavMenu()
         // NavigationViewのアイテム選択リスナー
         navigationView.setNavigationItemSelectedListener {
             // メールアドレスからuser_idを取得
-            cursor = database.query(
+            val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+            val database = dbHelper.readableDatabase
+            val cursor = database.query(
                 "users",
                 arrayOf("user_id"),
                 "email = ?",
@@ -117,6 +102,10 @@ class MainActivity : AppCompatActivity() {
                 adapter = mail!!.getStoredMail()
                 mRecyclerView.adapter = adapter
                 title = mail!!.getEmailAddress()
+                // 開いているアカウントを設定
+                val editor = sharedPref.edit()
+                editor.putInt("openedAccount", accountId)
+                editor.apply()
                 true
             } else {
                 // 選択されたアカウントがない
@@ -209,6 +198,66 @@ class MainActivity : AppCompatActivity() {
                 addAccount()
                 return true
             }
+            R.id.account_remove -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.account_remove_dialog)
+                    .setMessage(R.string.account_remove_confirm)
+                    .setPositiveButton(R.string.account_remove_ok) { _: DialogInterface, _: Int ->
+                        val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+                        val database = dbHelper.writableDatabase
+                        var accountId = sharedPref.getInt("openedAccount", -1)
+                        // openedAccountが空
+                        if (accountId == -1) {
+                            Toast.makeText(
+                                this,
+                                getString(R.string.account_not_found),
+                                Toast.LENGTH_LONG
+                            )
+                                .show()
+                        } else {
+                            // DBから削除
+                            database.delete("users", "user_id = ?", arrayOf(accountId.toString()))
+                            database.delete("mails", "user_id = ?", arrayOf(accountId.toString()))
+                            // NavigationViewのitemを更新
+                            refreshNavMenu()
+                            // user_idが一番小さいものを取得
+                            val cursor = database.query(
+                                "users",
+                                arrayOf("MIN(user_id)"),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                            )
+                            cursor.moveToFirst()
+                            accountId = cursor.getInt(0)
+                            if (accountId != 0) {
+                                // user_idからメールを取得
+                                mail = Mail(this, accountId)
+                                adapter = mail!!.getStoredMail()
+                                mRecyclerView.adapter = adapter
+                                title = mail!!.getEmailAddress()
+                                // 開いているアカウントを設定
+                                val editor = sharedPref.edit()
+                                editor.putInt("openedAccount", accountId)
+                                editor.apply()
+                            } else {
+                                // 保存されているアカウントがない
+                                adapter = Adapter(arrayOf())
+                                mRecyclerView.adapter = adapter
+                                title = getString(R.string.app_name)
+                                // 開いているアカウントも削除
+                                val editor = sharedPref.edit()
+                                editor.remove("openedAccount")
+                                editor.apply()
+                            }
+                            cursor.close()
+                        }
+                    }
+                    .setNegativeButton(R.string.account_remove_cancel, null)
+                    .show()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -278,7 +327,7 @@ class MainActivity : AppCompatActivity() {
                 mail = null
             }
             // 「後で」ボタン
-            .setNegativeButton(getString(R.string.account_add_cancel)) { _: DialogInterface, _: Int -> }
+            .setNegativeButton(getString(R.string.account_add_cancel), null)
             .create()
         dialog.setOnShowListener {
             // 各種取得
@@ -295,11 +344,39 @@ class MainActivity : AppCompatActivity() {
                     positiveButton.isEnabled =
                         addrRegex.matches(address.text.toString()) && password.text!!.isNotEmpty()
                 }
+
                 override fun afterTextChanged(p0: Editable?) {}
             }
             address.addTextChangedListener(textWatcher)
             password.addTextChangedListener(textWatcher)
         }
         dialog.show()
+    }
+
+    // NavigationViewのMenuを再構築する
+    private fun refreshNavMenu() {
+        navMenu.clear()
+        // 既存アカウント一覧を取得
+        val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+        val database = dbHelper.readableDatabase
+
+        val cursor =
+            database.query(
+                "users",
+                arrayOf("email"),
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        cursor.moveToFirst()
+        if (cursor.count > 0) {
+            while (!cursor.isAfterLast) {
+                navMenu.add(cursor.getString(0))
+                cursor.moveToNext()
+            }
+        }
+        cursor.close()
     }
 }
