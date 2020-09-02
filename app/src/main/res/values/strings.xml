@@ -13,4 +13,6 @@
     <string name="drawer_open">ドロワーを開く</string>
     <string name="drawer_close">ドロワーを閉じる</string>
     <string name="mail_not_found">メールが見つかりません</string>
+    <string name="auth_failed">認証に失敗しました</string>
+    <string name="connection_timeout">接続がタイムアウトしました</string>
 </resources>

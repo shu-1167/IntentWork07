@@ -231,7 +231,13 @@ class MainActivity : AppCompatActivity() {
                 // 「追加」ボタン
                 // 入力された項目を取得
                 val addr = address.text.toString()
-                val user = addr.split('@')[0]
+                // さくらのメールボックスはアドレスがそのままユーザ名になる
+                val sakuraRegex = Regex("[\\w\\-._]+@[\\w\\-_]+\\.sakura\\.ne\\.jp")
+                val user = if (sakuraRegex.matches(addr)) {
+                    addr
+                } else {
+                    addr.split('@')[0]
+                }
                 val pass = password.text.toString()
                 // データべースへ追加
                 insertUser(addr, user, pass)
@@ -278,7 +284,7 @@ class MainActivity : AppCompatActivity() {
             // 各種取得
             val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             // 入力検証用正規表現
-            val addrRegix = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
+            val addrRegex = Regex("[\\w\\-._]+@[\\w\\-._]+\\.[A-Za-z]+")
             // メールアドレス欄にフォーカス
             address.requestFocus()
             positiveButton.isEnabled = false
@@ -287,9 +293,8 @@ class MainActivity : AppCompatActivity() {
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     // 入力チェック
                     positiveButton.isEnabled =
-                        addrRegix.matches(address.text.toString()) && password.text!!.isNotEmpty()
+                        addrRegex.matches(address.text.toString()) && password.text!!.isNotEmpty()
                 }
-
                 override fun afterTextChanged(p0: Editable?) {}
             }
             address.addTextChangedListener(textWatcher)

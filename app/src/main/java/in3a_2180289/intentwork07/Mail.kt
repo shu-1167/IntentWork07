@@ -114,11 +114,18 @@ class Mail constructor(_context: Context, _accountId: Int) {
         } catch (ex: AuthenticationFailedException) {
             handler.post {
                 kotlin.run {
-                    Toast.makeText(context, "認証に失敗しました", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, R.string.auth_failed, Toast.LENGTH_LONG).show()
                     MainActivity.mSwipeRefreshLayout.isRefreshing = false
                 }
             }
             return
+        } catch (ex: java.net.SocketTimeoutException) {
+            handler.post {
+                kotlin.run {
+                    Toast.makeText(context, R.string.connection_timeout, Toast.LENGTH_LONG).show()
+                    MainActivity.mSwipeRefreshLayout.isRefreshing = false
+                }
+            }
         }
 
         // https://stackoverflow.com/questions/11435947/how-do-i-uniquely-identify-a-java-mail-message-using-imap
