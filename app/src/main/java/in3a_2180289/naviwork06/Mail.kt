@@ -6,7 +6,7 @@
  * 作成日：2020/08/05
  * @author shu-1167
  */
-package in3a_2180289.intentwork07
+package in3a_2180289.naviwork06
 
 import android.content.ContentValues
 import android.content.Context
@@ -15,7 +15,7 @@ import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import in3a_2180289.intentwork07.MainActivity.Companion.handler
+import in3a_2180289.naviwork06.MainActivity.Companion.handler
 import java.nio.charset.Charset
 import java.text.DateFormat
 import java.util.*

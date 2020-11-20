@@ -1,4 +1,4 @@
-package in3a_2180289.intentwork07
+package in3a_2180289.naviwork06
 
 import android.os.Bundle
 import android.webkit.WebView

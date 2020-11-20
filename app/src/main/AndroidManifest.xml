@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="in3a_2180289.intentwork07">
+    package="in3a_2180289.naviwork06">
 
     <uses-permission android:name="android.permission.INTERNET" />
 

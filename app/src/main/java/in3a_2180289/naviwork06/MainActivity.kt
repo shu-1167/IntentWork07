@@ -5,7 +5,7 @@
  * 作成日：2020/08/05
  * @author shu-1167
  */
-package in3a_2180289.intentwork07
+package in3a_2180289.naviwork06
 
 import android.content.ContentValues
 import android.content.DialogInterface

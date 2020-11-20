@@ -7,7 +7,7 @@
  * @author shu-1167
  */
 
-package in3a_2180289.intentwork07
+package in3a_2180289.naviwork06
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
