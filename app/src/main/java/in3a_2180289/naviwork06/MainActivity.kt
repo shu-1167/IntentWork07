@@ -426,7 +426,7 @@ class MainActivity : AppCompatActivity() {
         cursor.moveToFirst()
         if (cursor.count > 0) {
             while (!cursor.isAfterLast) {
-                navMenu.add(cursor.getString(0))
+                navMenu.add(cursor.getString(0)).setIcon(android.R.drawable.ic_dialog_email)
                 cursor.moveToNext()
             }
         }
