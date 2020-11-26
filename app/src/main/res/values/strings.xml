@@ -20,4 +20,5 @@
     <string name="account_remove_confirm">このアカウントを削除しますか？</string>
     <string name="account_remove_ok">削除</string>
     <string name="account_remove_cancel">キャンセル</string>
+    <string name="sample_add_menu">サンプルデータの挿入</string>
 </resources>

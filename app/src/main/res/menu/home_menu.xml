@@ -10,4 +10,9 @@
         android:id="@+id/account_remove"
         android:title="@string/account_remove_menu"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/sample_add"
+        android:title="@string/sample_add_menu"
+        app:showAsAction="never" />
 </menu>

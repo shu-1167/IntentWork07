@@ -258,6 +258,13 @@ class MainActivity : AppCompatActivity() {
                     .setNegativeButton(R.string.account_remove_cancel, null)
                     .show()
             }
+            R.id.sample_add -> {
+                // サンプルデータ挿入
+                MailSample.SAMPLE.forEach {
+                    insertUser(it[0], it[1], it[2])
+                }
+                refreshNavMenu()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
