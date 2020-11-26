@@ -261,7 +261,53 @@ class MainActivity : AppCompatActivity() {
             R.id.sample_add -> {
                 // サンプルデータ挿入
                 MailSample.SAMPLE.forEach {
-                    insertUser(it[0], it[1], it[2])
+                    val user = it["users"]!!.filterIsInstance<String>()
+                    val mails = it["mails"]!!.filterIsInstance<Array<String>>()
+                    insertUser(user[0], user[1], user[2])
+                    // 追加したアカウントのuser_idを取得
+                    val dbHelper = MailDBHelper(this, dbName, null, dbVersion)
+                    val database = dbHelper.writableDatabase
+                    // user_idが一番大きいものを取得
+                    val cursor = database.query(
+                        "users",
+                        arrayOf("MAX(user_id)"),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                    cursor.moveToFirst()
+                    val accountId = cursor.getInt(0)
+                    if (accountId != 0) {
+                        for ((index, mail) in mails.withIndex()) {
+                            // サンプルメールの追加
+                            val values = ContentValues()
+                            values.put("user_id", accountId)
+                            values.put("uid", index)
+                            values.put("subject", mail[0])
+                            values.put("sender", mail[1])
+                            values.put("date", mail[2])
+                            values.put("body", "This is sample mail.")
+                            values.put("charset", "utf-8")
+                            values.put("mime_type", "text/plain")
+
+                            try {
+                                database.insertOrThrow("mails", null, values)
+                            } catch (ex: Exception) {
+                                Toast.makeText(
+                                    this,
+                                    getString(R.string.failed_add_mail),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    } else {
+                        // 保存されたアカウントがない
+                        Toast.makeText(this, getString(R.string.failed_add_mail), Toast.LENGTH_LONG)
+                            .show()
+                    }
+                    cursor.close()
                 }
                 refreshNavMenu()
             }

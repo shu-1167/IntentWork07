@@ -21,4 +21,5 @@
     <string name="account_remove_ok">削除</string>
     <string name="account_remove_cancel">キャンセル</string>
     <string name="sample_add_menu">サンプルデータの挿入</string>
+    <string name="failed_add_mail">メールの追加に失敗しました</string>
 </resources>
